@@ -1,0 +1,13 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Right
+ColumnLimit: 0
+NamespaceIndentation: All
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: Always
+  BeforeCatch: true
+  BeforeElse: true
