@@ -11,14 +11,48 @@
 #include <includes.h>
 #include <wrapper.hpp>
 
-struct LogString {
-    std::string log;
-    uint64_t time;
-};
+std::unique_ptr<Wrapper> SDK = nullptr;
 
 static uint64_t startTick = 0;
 std::vector<LogString> LogQueue = {};
-std::unique_ptr<Wrapper> SDK = nullptr;
+
+void DebugLogV(const char *fmt, va_list args)
+{
+    uint64_t milliseconds = GetTickCount64() - startTick;
+    uint64_t minutes = milliseconds / 60000;
+    uint64_t remainingMillisecondsAfterMinutes = milliseconds % 60000;
+    uint64_t seconds = remainingMillisecondsAfterMinutes / 1000;
+    uint64_t remainingMilliseconds = remainingMillisecondsAfterMinutes % 1000;
+
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    const int old_size = g.DebugLogBuf.size();
+    g.DebugLogBuf.appendf("[%02llu:%02llu:%03llu] ", minutes, seconds, remainingMilliseconds);
+    g.DebugLogBuf.appendfv(fmt, args);
+    g.DebugLogIndex.append(g.DebugLogBuf.c_str(), old_size, g.DebugLogBuf.size());
+}
+
+void DebugLogQueue(const LogString &logStr)
+{
+    uint64_t milliseconds = logStr.time - startTick;
+    uint64_t minutes = milliseconds / 60000;
+    uint64_t remainingMillisecondsAfterMinutes = milliseconds % 60000;
+    uint64_t seconds = remainingMillisecondsAfterMinutes / 1000;
+    uint64_t remainingMilliseconds = remainingMillisecondsAfterMinutes % 1000;
+
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    const int old_size = g.DebugLogBuf.size();
+    g.DebugLogBuf.appendf("[%02llu:%02llu:%03llu] ", minutes, seconds, remainingMilliseconds);
+    g.DebugLogBuf.appendf("%s", logStr.log.c_str());
+    g.DebugLogIndex.append(g.DebugLogBuf.c_str(), old_size, g.DebugLogBuf.size());
+}
+
+void DebugLog(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    DebugLogV(fmt, args);
+    va_end(args);
+}
 
 Present oPresent;
 HWND window = NULL;
@@ -75,44 +109,6 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
 
     return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
-}
-
-void DebugLogV(const char *fmt, va_list args)
-{
-    uint64_t milliseconds = GetTickCount64() - startTick;
-    uint64_t minutes = milliseconds / 60000;
-    uint64_t remainingMillisecondsAfterMinutes = milliseconds % 60000;
-    uint64_t seconds = remainingMillisecondsAfterMinutes / 1000;
-    uint64_t remainingMilliseconds = remainingMillisecondsAfterMinutes % 1000;
-
-    ImGuiContext &g = *ImGui::GetCurrentContext();
-    const int old_size = g.DebugLogBuf.size();
-    g.DebugLogBuf.appendf("[%02llu:%02llu:%03llu] ", minutes, seconds, remainingMilliseconds);
-    g.DebugLogBuf.appendfv(fmt, args);
-    g.DebugLogIndex.append(g.DebugLogBuf.c_str(), old_size, g.DebugLogBuf.size());
-}
-
-void DebugLogQueue(const LogString &logStr)
-{
-    uint64_t milliseconds = logStr.time - startTick;
-    uint64_t minutes = milliseconds / 60000;
-    uint64_t remainingMillisecondsAfterMinutes = milliseconds % 60000;
-    uint64_t seconds = remainingMillisecondsAfterMinutes / 1000;
-    uint64_t remainingMilliseconds = remainingMillisecondsAfterMinutes % 1000;
-
-    ImGuiContext &g = *ImGui::GetCurrentContext();
-    const int old_size = g.DebugLogBuf.size();
-    g.DebugLogBuf.appendf("[%02llu:%02llu:%03llu] ", minutes, seconds, remainingMilliseconds);
-    g.DebugLogBuf.appendf("%s", logStr.log.c_str());
-    g.DebugLogIndex.append(g.DebugLogBuf.c_str(), old_size, g.DebugLogBuf.size());
-}
-
-void DebugLog(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    DebugLogV(fmt, args);
-    va_end(args);
 }
 
 static bool isShowMenu = true;

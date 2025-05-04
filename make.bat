@@ -12,4 +12,6 @@ cmake ^
 
 cmake --build .
 
+move Chokevy.dll "C:/Users/nghilq/Desktop/Fakekey2k"
+
 cd ..
