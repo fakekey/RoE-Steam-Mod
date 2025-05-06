@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 
 #include <MinHook.h>
@@ -9,9 +8,6 @@
 #include <il2cpp.h>
 #include <imgui_internal.h>
 #include <includes.h>
-#include <wrapper.hpp>
-
-std::unique_ptr<Wrapper> SDK = nullptr;
 
 static uint64_t startTick = 0;
 std::vector<LogString> LogQueue = {};
@@ -462,15 +458,11 @@ __int64 hook_runtimeApiDriverHandshakeStatus()
 
     if (!g_initialized)
     {
-        Il2cpp::initialize();
-        SDK = std::make_unique<Wrapper>();
+        uint64_t GameAssembly = (uint64_t)GetModuleHandleA("GameAssembly.dll");
+        void *_HandleHealthEvent = (void *)(GameAssembly + 0x6BB44D0);
 
-        const auto Assembly_CSharp = SDK->get_image("Assembly-CSharp.dll");
-        const auto BattleStatistic = Assembly_CSharp->get_class("BattleStatistic", "Pinkcore.Heros.Gameplay");
-        const auto _HandleHealthEvent = BattleStatistic->get_method("_HandleHealthEvent", 3);
-
-        if (MH_CreateHook(UFUNC(_HandleHealthEvent), (void *)hook_HandleHealthEvent, (void **)&orig_HandleHealthEvent) == MH_OK)
-            MH_EnableHook(UFUNC(_HandleHealthEvent));
+        if (MH_CreateHook(_HandleHealthEvent, (void *)hook_HandleHealthEvent, (void **)&orig_HandleHealthEvent) == MH_OK)
+            MH_EnableHook(_HandleHealthEvent);
 
         g_initialized = true;
     }
