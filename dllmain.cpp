@@ -9,8 +9,21 @@
 #include <imgui_internal.h>
 #include <includes.h>
 
+std::string To_UTF8(const std::u16string &s)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
+    return conv.to_bytes(s);
+}
+
+std::string stringFrom(System_String_o *String)
+{
+    std::u16string data((char16_t *)&String->fields._firstChar, String->fields._stringLength);
+    return To_UTF8(data);
+}
+
 static uint64_t startTick = 0;
 std::vector<LogString> LogQueue = {};
+std::string version = "Unknown";
 
 void DebugLogV(const char *fmt, va_list args)
 {
@@ -185,7 +198,7 @@ void MainLoop(ImDrawList *canvas, ImGuiIO &io)
                 if (ImGui::SmallButton("Copy"))
                     ImGui::SetClipboardText(g.DebugLogBuf.c_str());
                 ImGui::Spacing();
-                ImGui::BeginChild("##Logs", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+                ImGui::BeginChild("##Logs", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
                 ImGuiListClipper clipper;
                 clipper.Begin(g.DebugLogIndex.size());
                 while (clipper.Step())
@@ -199,8 +212,8 @@ void MainLoop(ImDrawList *canvas, ImGuiIO &io)
             if (ImGui::BeginTabItem("About"))
             {
                 ImGui::Spacing();
-                ImGui::BeginChild("##Logs", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
-                ImGui::Text("Rise of Eros version: 3.3.2");
+                ImGui::BeginChild("##About", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
+                ImGui::Text("Rise of Eros version: %s", version.c_str());
                 ImGui::Text("Fakekey2k's Menu version: 1.0.0");
                 ImGui::Text("Author: Fakekey");
                 ImGui::EndChild();
@@ -360,18 +373,6 @@ void ClearLogs()
     }
 }
 
-std::string To_UTF8(const std::u16string &s)
-{
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
-    return conv.to_bytes(s);
-}
-
-std::string stringFrom(System_String_o *String)
-{
-    std::u16string data((char16_t *)&String->fields._firstChar, String->fields._stringLength);
-    return To_UTF8(data);
-}
-
 typedef int32_t(__fastcall *get_CurrentHealth)(Pinkcore_Gameplay_Health_o *__this);
 typedef Pinkcore_Gameplay_HealthChange_o *(__fastcall *DirectDamage)(Pinkcore_Gameplay_Health_o *__this, int32_t gaugeIndex, int32_t damagePoints);
 typedef Pinkcore_Gameplay_HealthChange_o *(__fastcall *Damage)(Pinkcore_Gameplay_Health_o *__this, int32_t damagePoints);
@@ -460,6 +461,8 @@ __int64 hook_runtimeApiDriverHandshakeStatus()
     {
         uint64_t GameAssembly = (uint64_t)GetModuleHandleA("GameAssembly.dll");
         void *_HandleHealthEvent = (void *)(GameAssembly + 0x6BB44D0);
+        void *get_Version = (void *)(GameAssembly + 0x2F6D760);
+        version = stringFrom(((System_String_o * (__fastcall *)()) get_Version)());
 
         if (MH_CreateHook(_HandleHealthEvent, (void *)hook_HandleHealthEvent, (void **)&orig_HandleHealthEvent) == MH_OK)
             MH_EnableHook(_HandleHealthEvent);
