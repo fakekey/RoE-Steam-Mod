@@ -185,6 +185,9 @@ struct System_String_o {
     void *monitor;
     System_String_Fields fields;
 };
+struct System_String_StaticFields {
+    struct System_String_o *Empty;
+};
 ///////////////////////////////////////////// System.String /////////////////////////////////////////////
 
 //-----------------------------------------------------------------------------------------------------//
