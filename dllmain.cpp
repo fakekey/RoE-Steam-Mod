@@ -214,7 +214,7 @@ void MainLoop(ImDrawList *canvas, ImGuiIO &io)
                 ImGui::Spacing();
                 ImGui::BeginChild("##About", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
                 ImGui::Text("Rise of Eros version: %s", version.c_str());
-                ImGui::Text("Fakekey2k's Menu version: 1.1.0");
+                ImGui::Text("Fakekey2k's Menu version: 1.1.1");
                 ImGui::Text("Author: Fakekey");
                 ImGui::EndChild();
                 ImGui::EndTabItem();
@@ -373,7 +373,7 @@ void ClearLogs()
     }
 }
 
-typedef int32_t(__fastcall *get_CurrentHealth)(Pinkcore_Gameplay_Health_o *__this);
+typedef bool(__fastcall *get_IsDead)(Pinkcore_Gameplay_Health_o *__this);
 typedef Pinkcore_Gameplay_HealthChange_o *(__fastcall *DirectDamage)(Pinkcore_Gameplay_Health_o *__this, int32_t gaugeIndex, int32_t damagePoints);
 typedef Pinkcore_Gameplay_HealthChange_o *(__fastcall *Damage)(Pinkcore_Gameplay_Health_o *__this, int32_t damagePoints);
 
@@ -390,10 +390,10 @@ void hook_HandleHealthEvent(void *__this, void *caster, Pinkcore_Gameplay_Charac
     {
         auto real_damage = healthViewInfo->fields._totalHealthChangeApplied;
         auto health = (Pinkcore_Gameplay_Health_o *)receiver->fields._health;
-        auto get_hp = (get_CurrentHealth)health->klass->vtable._12_Pinkcore_Gameplay_IHealthInfo_get_CurrentHealth.methodPtr;
+        auto is_dead = (get_IsDead)health->klass->vtable._11_Pinkcore_Gameplay_IHealthInfo_get_IsDead.methodPtr;
         auto sub_hp = (Damage)health->klass->vtable._4_Pinkcore_Gameplay_IHealth_Damage.methodPtr;
         auto restore_hp = (DirectDamage)health->klass->vtable._5_Pinkcore_Gameplay_IHealth_DirectDamage.methodPtr;
-        auto result_restore = restore_hp(health, 0, -real_damage);
+        restore_hp(health, 0, -real_damage);
 
         auto modified_damage = real_damage * dmgMultiplier;
         auto result_sub = sub_hp(health, modified_damage);
@@ -406,7 +406,7 @@ void hook_HandleHealthEvent(void *__this, void *caster, Pinkcore_Gameplay_Charac
         healthViewInfo->fields._totalHealthChangeReceived = received_damage;
         healthViewInfo->fields._totalHealthChangeApplied = applied_damage;
 
-        if (get_hp(health) <= 0)
+        if (is_dead(health))
             healthViewInfo->fields._isChangeToDeath = true;
         else
             healthViewInfo->fields._isChangeToDeath = false;
@@ -416,10 +416,10 @@ void hook_HandleHealthEvent(void *__this, void *caster, Pinkcore_Gameplay_Charac
     {
         auto real_damage = healthViewInfo->fields._totalHealthChangeApplied;
         auto health = (Pinkcore_Gameplay_Health_o *)receiver->fields._health;
-        auto get_hp = (get_CurrentHealth)health->klass->vtable._12_Pinkcore_Gameplay_IHealthInfo_get_CurrentHealth.methodPtr;
+        auto is_dead = (get_IsDead)health->klass->vtable._11_Pinkcore_Gameplay_IHealthInfo_get_IsDead.methodPtr;
         auto sub_hp = (Damage)health->klass->vtable._4_Pinkcore_Gameplay_IHealth_Damage.methodPtr;
         auto restore_hp = (DirectDamage)health->klass->vtable._5_Pinkcore_Gameplay_IHealth_DirectDamage.methodPtr;
-        auto result_restore = restore_hp(health, 0, -real_damage);
+        restore_hp(health, 0, -real_damage);
 
         auto modified_damage = real_damage / dmgReduceMultiplier;
         auto result_sub = sub_hp(health, modified_damage);
@@ -432,7 +432,7 @@ void hook_HandleHealthEvent(void *__this, void *caster, Pinkcore_Gameplay_Charac
         healthViewInfo->fields._totalHealthChangeReceived = received_damage;
         healthViewInfo->fields._totalHealthChangeApplied = applied_damage;
 
-        if (get_hp(health) <= 0)
+        if (is_dead(health))
             healthViewInfo->fields._isChangeToDeath = true;
         else
             healthViewInfo->fields._isChangeToDeath = false;
@@ -460,8 +460,8 @@ __int64 hook_runtimeApiDriverHandshakeStatus()
     if (!g_initialized)
     {
         uint64_t GameAssembly = (uint64_t)GetModuleHandleA("GameAssembly.dll");
-        void *_HandleHealthEvent = (void *)(GameAssembly + 0x792CBA0);
-        void *get_Version = (void *)(GameAssembly + 0x302A3B0);
+        void *_HandleHealthEvent = (void *)(GameAssembly + 0x75A3130);
+        void *get_Version = (void *)(GameAssembly + 0x3031DC0);
         version = stringFrom(((System_String_o * (__fastcall *)()) get_Version)());
 
         if (MH_CreateHook(_HandleHealthEvent, (void *)hook_HandleHealthEvent, (void **)&orig_HandleHealthEvent) == MH_OK)
